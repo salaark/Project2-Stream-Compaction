@@ -18,9 +18,12 @@ namespace StreamCompaction {
          * (Optional) For better understanding before starting moving to GPU, you can simulate your GPU scan in this function first.
          */
         void scan(int n, int *odata, const int *idata) {
-	        timer().startCpuTimer();
-            // TODO
-	        timer().endCpuTimer();
+		timer().startCpuTimer();
+		odata[0] = idata[0];
+		for (int i = 1; i < n; ++i) {
+			odata[i] = idata[i] + idata[i - 1];
+		}
+		timer().endCpuTimer();
         }
 
         /**
@@ -30,9 +33,14 @@ namespace StreamCompaction {
          */
         int compactWithoutScan(int n, int *odata, const int *idata) {
 	        timer().startCpuTimer();
-            // TODO
+		int count = 0;
+            	for (int i = 0; i < n; ++i) {
+			if (idata[i] != 0) {
+				odata[count++] = idata[i];
+			}
+		}
 	        timer().endCpuTimer();
-            return -1;
+		return count;
         }
 
         /**
@@ -42,7 +50,17 @@ namespace StreamCompaction {
          */
         int compactWithScan(int n, int *odata, const int *idata) {
 	        timer().startCpuTimer();
-	        // TODO
+		int mapped[n];
+		for (int i = 0; i < n; ++i) {
+			mapped[i] = idata[i] != 0 ? 1 : 0;
+		}
+		int scanned[n];
+		scan(n, scanned, mapped);
+		for (int i = 0; i < n; ++i) {
+			if (mapped[i] != 0) {
+				odata[scanned[i]] = idata[i];
+			}
+		}
 	        timer().endCpuTimer();
             return -1;
         }
