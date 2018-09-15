@@ -67,6 +67,7 @@ int main(int argc, char* argv[]) {
     //printArray(SIZE, c, true);
     printCmpResult(NPOT, b, c);
 
+	/*
     zeroArray(SIZE, c);
     printDesc("work-efficient scan, power-of-two");
     StreamCompaction::Efficient::scan(SIZE, c, a);
@@ -146,6 +147,7 @@ int main(int argc, char* argv[]) {
     printElapsedTime(StreamCompaction::Efficient::timer().getGpuElapsedTimeForPreviousOperation(), "(CUDA Measured)");
     //printArray(count, c, true);
     printCmpLenResult(count, expectedNPOT, b, c);
+	*/
 
     system("pause"); // stop Win32 console from closing on exit
 	delete[] a;
