@@ -45,7 +45,7 @@ namespace StreamCompaction {
 			cudaMalloc((void**)&dev_data, n * sizeof(int));
 			cudaMemcpy(dev_data, idata, n * sizeof(int), cudaMemcpyHostToDevice);
 
-			const int blockSize = 256;
+			const int blockSize = ilog2ceil(n);
 			dim3 fullBlocksPerGrid((n + blockSize - 1) / blockSize);
 
 			for (int d = 0; d < ilog2ceil(n); ++d) {
@@ -84,7 +84,7 @@ namespace StreamCompaction {
 			cudaMalloc((void**)&dev_scanned, n * sizeof(int));
 			cudaMemcpy(dev_idata, idata, n * sizeof(int), cudaMemcpyHostToDevice);
 			
-			const int blockSize = 256;
+			const int blockSize = ilog2ceil(n);
 			dim3 fullBlocksPerGrid((n + blockSize - 1) / blockSize);
 
             timer().startGpuTimer();
