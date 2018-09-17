@@ -17,12 +17,16 @@ namespace StreamCompaction {
 		 * For performance analysis, this is supposed to be a simple for loop.
 		 * (Optional) For better understanding before starting moving to GPU, you can simulate your GPU scan in this function first.
 		 */
+		void scanNoTimer(int n, int *odata, const int *idata) {
+			odata[0] = 0;
+			for (int i = 1; i < n; ++i) {
+				odata[i] = idata[i - 1] + odata[i - 1];
+			}
+		}
+
 		void scan(int n, int *odata, const int *idata) {
 			timer().startCpuTimer();
-			odata[0] = idata[0];
-			for (int i = 1; i < n; ++i) {
-				odata[i] = idata[i] + idata[i - 1];
-			}
+			scanNoTimer(n, odata, idata);
 			timer().endCpuTimer();
 		}
 
@@ -55,14 +59,14 @@ namespace StreamCompaction {
 				mapped[i] = idata[i] != 0 ? 1 : 0;
 			}
 			int* scanned = new int[n];
-			scan(n, scanned, mapped);
+			scanNoTimer(n, scanned, mapped);
 			for (int i = 0; i < n; ++i) {
-				if (mapped[i] != 0) {
+				if (mapped[i] == 1) {
 					odata[scanned[i]] = idata[i];
 				}
 			}
 			timer().endCpuTimer();
-			return -1;
+			return scanned[n - 1];
 		}
 	}
 }

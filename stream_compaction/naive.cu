@@ -14,20 +14,16 @@ namespace StreamCompaction {
 
         // TODO: __global__
 		// Kernel for naive prefix scan
-		__global__ void kernNaiveScan(int n, int *odata, const int *idata, int ilog2) {
-			int k = (blockIdx.x * blockDim.x) + threadIdx.x;
-			if (k >= n)
+		__global__ void kernNaiveScan(int n, int *odata, const int *idata, const int offset) {
+			int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+			if (index >= n)
 				return;
 
-			for (int d = 1; d < n; d *= 2) {
-				if (k >= d) {
-					int idatakd = idata[k - d];
-					int idatak = idata[k];
-					odata[k] = idatakd + idatak;
-				}
-				else {
-					odata[k] = idata[k];
-				}
+			if (index >= offset) {
+				odata[index] = idata[index - offset] + idata[index];
+			}
+			else {
+				odata[index] = idata[index];
 			}
 		}
 
@@ -35,11 +31,26 @@ namespace StreamCompaction {
          * Performs prefix-sum (aka scan) on idata, storing the result into odata.
          */
 		void scan(int n, int *odata, const int *idata) {
-            timer().startGpuTimer();
-			int blockSize = ilog2ceil(n);
+			int *dev_idata, *dev_odata;
+			cudaMalloc((void**)&dev_idata, n * sizeof(int));
+			cudaMalloc((void**)&dev_odata, n * sizeof(int));
+			cudaMemcpy(dev_idata, idata, n * sizeof(int), cudaMemcpyHostToDevice);
+
+			timer().startGpuTimer();
+
+			const int blockSize = 256;
 			dim3 fullBlocksPerGrid((n + blockSize - 1) / blockSize);
-			kernNaiveScan << <fullBlocksPerGrid, blockSize >> >(n, odata, idata, ilog2ceil(n));
+
+			for (int d = 1; d <= ilog2ceil(n); ++d) {
+				kernNaiveScan << <fullBlocksPerGrid, blockSize >> > (n, dev_odata, dev_idata, pow(2, d - 1));
+				std::swap(dev_odata, dev_idata);
+			}
+
             timer().endGpuTimer();
+
+			cudaMemcpy(odata + 1, dev_idata, (n - 1) * sizeof(int), cudaMemcpyDeviceToHost);
+			cudaFree(dev_idata);
+			cudaFree(dev_odata);
         }
     }
 }
