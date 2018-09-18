@@ -13,28 +13,28 @@ namespace StreamCompaction {
         }
 
 		// Kernels for efficient prefix scan
-		__global__ void kernUpScan(int n, int *data, const int offset) {
+		__global__ void kernUpScan(int n, int *data, const int offset, const int offset2) {
 			int index = (blockIdx.x * blockDim.x) + threadIdx.x;
 			if (index >= n)
 				return;
 
-			if (index % (offset * 2) != 0)
+			if (index % offset2 != 0)
 				return;
 
-			data[index + (offset * 2) - 1] += data[index + offset - 1];
+			data[index + offset2 - 1] += data[index + offset - 1];
 		}
 
-		__global__ void kernDownScan(int n, int *data, const int offset) {
+		__global__ void kernDownScan(int n, int *data, const int offset, const int offset2) {
 			int index = (blockIdx.x * blockDim.x) + threadIdx.x;
 			if (index >= n)
 				return;
 
-			if (index % (offset * 2) != 0)
+			if (index % offset2 != 0)
 				return;
 
 			int temp = data[index + offset - 1];
-			data[index + offset - 1] = data[index + (offset * 2) - 1];
-			data[index + (offset * 2) - 1] += temp;
+			data[index + offset - 1] = data[index + offset2 - 1];
+			data[index + offset2 - 1] += temp;
 		}
 
         /**
@@ -45,16 +45,18 @@ namespace StreamCompaction {
 			cudaMalloc((void**)&dev_data, n * sizeof(int));
 			cudaMemcpy(dev_data, idata, n * sizeof(int), cudaMemcpyHostToDevice);
 
-			const int blockSize = ilog2ceil(n);
+			const int blockSize = 256;
 			dim3 fullBlocksPerGrid((n + blockSize - 1) / blockSize);
 
 			for (int d = 0; d < ilog2ceil(n); ++d) {
-				kernUpScan << <fullBlocksPerGrid, blockSize >> > (n, dev_data, pow(2, d));
+				int offset = pow(2, d);
+				kernUpScan << <fullBlocksPerGrid, blockSize >> > (n, dev_data, offset, offset * 2);
 			}
 
 			cudaMemset(dev_data + n - 1, 0, 1);
 			for (int d = ilog2ceil(n); d >= 0; --d) {
-				kernDownScan << <fullBlocksPerGrid, blockSize >> > (n, dev_data, pow(2, d));
+				int offset = pow(2, d);
+				kernDownScan << <fullBlocksPerGrid, blockSize >> > (n, dev_data, offset, offset * 2);
 			}
 
 			cudaMemcpy(odata, dev_data, n * sizeof(int), cudaMemcpyDeviceToHost);
@@ -84,7 +86,7 @@ namespace StreamCompaction {
 			cudaMalloc((void**)&dev_scanned, n * sizeof(int));
 			cudaMemcpy(dev_idata, idata, n * sizeof(int), cudaMemcpyHostToDevice);
 			
-			const int blockSize = ilog2ceil(n);
+			const int blockSize = 256;
 			dim3 fullBlocksPerGrid((n + blockSize - 1) / blockSize);
 
             timer().startGpuTimer();

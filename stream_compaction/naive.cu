@@ -38,7 +38,7 @@ namespace StreamCompaction {
 
 			timer().startGpuTimer();
 
-			const int blockSize = ilog2ceil(n);
+			const int blockSize = 512;
 			dim3 fullBlocksPerGrid((n + blockSize - 1) / blockSize);
 
 			for (int d = 1; d <= ilog2ceil(n); ++d) {
