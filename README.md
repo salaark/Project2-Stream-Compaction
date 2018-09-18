@@ -19,10 +19,13 @@ Stream compaction maps an array to 0s and 1s depending on if the value meets a c
 ### Analysis
 
 ![Scan, (2^x)-3 Array Size](img/scan.png)
+Scan, (2^x)-3 Array Size
 
 ![Scan, 2^x Array Size](img/scan2.png)
+Scan, 2^x Array Size
 
 ![Stream Compact](img/compact.png)
+Stream Compact
 
 In the graphs above, scan and compact are compared for various array sizes and algorithm implementations. All numbers are based on the average of two runs, since random arrays cause variance in runtime. The graphs are split into power-of-2 array sizes and power-of-2 minus 3, since behavior of certain algorithms can cause the runtime to vary between these conditions. One thing to note was that the power-of-2 implementation of thrust took 4-5 seconds, so it was discluded from the results. This may have been due to thrust being slow the first time it is called.
 
